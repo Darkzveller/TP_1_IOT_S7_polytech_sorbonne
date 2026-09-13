@@ -271,11 +271,11 @@ Elles permettent respectivement de récupérer la température et l'humidité.
 flowchart LR
     DHT[DHT11] --> ESP[ESP32]
     ESP -- HTTP POST /donnes --> NR[Node-RED]
-    NR --> DASH[Dashboard]
+    NR -- temp/hum/compteur --> DASH[Dashboard]
     DASH -- commande LED --> NR
     ESP -- HTTP GET /button --> NR
     NR -- 0 ou 1 --> ESP
-    ESP --> LED[LED GPIO 2]
+    ESP --> LED[LED INTERNE GPIO 2]
 ```
 
 Dans cette architecture, l'ESP32 est principalement le **client HTTP** et Node-RED joue le rôle de **serveur HTTP local**.
