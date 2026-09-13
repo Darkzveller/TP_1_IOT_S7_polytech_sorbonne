@@ -31,11 +31,6 @@ String serverPOST = "http://192.168.66.171:1880/donnes";
 String serverGET =  "http://192.168.66.171:1880/button";
 
 #endif
-#ifdef MA_FREEBOX                                // Nom d'hôte de la carte ESP32
-const char *ssid = "Freebox-10E503";             // SSID du réseau WiFi
-const char *password = "h2nn5qzkvfq639rfqv5s2v"; // Mot de passe du réseau WiFi
-String serverPOST = "http://192.168.1.110:1880/donnes";
-#endif
 
 void setup()
 {

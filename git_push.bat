@@ -1,2 +1,2 @@
 echo off
-git status && git add . && git commit -m "Ajout readme" && git push
+git status && git add . && git commit -m "Maj" && git push

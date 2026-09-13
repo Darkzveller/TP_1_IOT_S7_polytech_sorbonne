@@ -36,11 +36,6 @@ const char *password = "youssef13"; // Mot de passe du réseau WiFi
 const char *mqtt_server = "192.168.233.171";
 
 #endif
-#ifdef MA_FREEBOX                                // Nom d'hôte de la carte ESP32
-const char *ssid = "Freebox-10E503";             // SSID du réseau WiFi
-const char *password = "h2nn5qzkvfq639rfqv5s2v"; // Mot de passe du réseau WiFi
-const char *mqtt_server = "192.168.66.171";
-#endif
 
 WiFiClient espClient;
 PubSubClient client(espClient);

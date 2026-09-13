@@ -12,10 +12,6 @@ Le système doit fonctionner dans les deux sens :
 - **Uplink** : l'ESP32 lit la température et l'humidité du DHT11 puis transmet ces mesures vers Node-RED pour les afficher ;
 - **Downlink** : une commande envoyée depuis l'interface Node-RED permet de modifier l'état de la LED intégrée à l'ESP32.
 
-> **Attention avant publication :** les fichiers source d'origine contiennent actuellement des identifiants Wi-Fi en clair. Ils doivent être retirés ou déplacés dans un fichier non suivi par Git avant de rendre le dépôt public. Voir la section [Sécurité avant publication sur GitHub](#sécurité-avant-publication-sur-github).
-
----
-
 ## Sommaire
 
 - [1. Objectifs du TP](#1-objectifs-du-tp)
@@ -129,13 +125,13 @@ TP1/
 
 ### Rôle de chaque projet
 
-| Dossier | Rôle |
-|---|---|
-| `Esp32_DHt_11` | Première étape : lecture locale du capteur DHT11 et affichage dans le moniteur série. |
-| `Esp32_to_Node_red` | Test de communication HTTP entre l'ESP32 et Node-RED avec un compteur. |
-| `Esp32_to_Node_red_et_DHT11` | Version REST : envoi du compteur, de la température et de l'humidité par POST, puis récupération d'une commande LED par GET. |
-| `Esp32_to_Mosquitto_et_DHT11` | Version MQTT : publication des mesures et abonnement au topic de commande de la LED. |
-| `Node_red_architecture` | Export JSON du flow Node-RED présent dans le dépôt. |
+| Dossier                         | Rôle                                                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `Esp32_DHt_11`                | Première étape : lecture locale du capteur DHT11 et affichage dans le moniteur série.                                         |
+| `Esp32_to_Node_red`           | Test de communication HTTP entre l'ESP32 et Node-RED avec un compteur.                                                           |
+| `Esp32_to_Node_red_et_DHT11`  | Version REST : envoi du compteur, de la température et de l'humidité par POST, puis récupération d'une commande LED par GET. |
+| `Esp32_to_Mosquitto_et_DHT11` | Version MQTT : publication des mesures et abonnement au topic de commande de la LED.                                             |
+| `Node_red_architecture`       | Export JSON du flow Node-RED présent dans le dépôt.                                                                           |
 
 Cette organisation permet de voir l'évolution du projet au lieu d'avoir directement un programme final difficile à déboguer.
 
@@ -509,11 +505,11 @@ Le port MQTT non chiffré utilisé pour ce TP est `1883`.
 
 ## Topics utilisés
 
-| Topic | Sens | Contenu |
-|---|---|---|
-| `esp32/temperature` | ESP32 -> broker | température du DHT11 |
-| `esp32/humidity` | ESP32 -> broker | humidité du DHT11 |
-| `esp32/output` | broker -> ESP32 | commande `true` ou `false` pour la LED |
+| Topic                 | Sens            | Contenu                                   |
+| --------------------- | --------------- | ----------------------------------------- |
+| `esp32/temperature` | ESP32 -> broker | température du DHT11                     |
+| `esp32/humidity`    | ESP32 -> broker | humidité du DHT11                        |
+| `esp32/output`      | broker -> ESP32 | commande`true` ou `false` pour la LED |
 
 ## Publication des mesures
 
@@ -807,17 +803,17 @@ client.loop();
 
 # 11. Comparaison REST et MQTT
 
-| Critère | HTTP REST | MQTT |
-|---|---|---|
-| Modèle | Requête / réponse | Publication / abonnement |
-| Intermédiaire | Node-RED agit directement comme serveur HTTP | Broker Mosquitto |
-| Envoi ESP32 -> serveur | POST | `publish()` |
-| Commande serveur -> ESP32 | GET périodique dans cette implémentation | message envoyé directement au topic abonné |
-| Adressage | URL / endpoint | topic |
-| Mise en œuvre | Très intuitive pour une API web | Demande un broker et une logique publish/subscribe |
-| IoT avec beaucoup de messages | Possible, mais plus verbeux | Généralement très adapté |
-| Réactivité du downlink | Dépend du rythme des GET | Très naturelle avec l'abonnement |
-| Débogage | codes HTTP, navigateur, Postman, logs | `mosquitto_sub`, logs du broker, topics |
+| Critère                      | HTTP REST                                    | MQTT                                               |
+| ----------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| Modèle                       | Requête / réponse                          | Publication / abonnement                           |
+| Intermédiaire                | Node-RED agit directement comme serveur HTTP | Broker Mosquitto                                   |
+| Envoi ESP32 -> serveur        | POST                                         | `publish()`                                      |
+| Commande serveur -> ESP32     | GET périodique dans cette implémentation   | message envoyé directement au topic abonné       |
+| Adressage                     | URL / endpoint                               | topic                                              |
+| Mise en œuvre                | Très intuitive pour une API web             | Demande un broker et une logique publish/subscribe |
+| IoT avec beaucoup de messages | Possible, mais plus verbeux                  | Généralement très adapté                       |
+| Réactivité du downlink      | Dépend du rythme des GET                    | Très naturelle avec l'abonnement                  |
+| Débogage                     | codes HTTP, navigateur, Postman, logs        | `mosquitto_sub`, logs du broker, topics          |
 
 ## Ce que j'ai retenu
 
