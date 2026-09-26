@@ -1,2 +1,2 @@
 echo off
-git status && git add . && git commit -m "maj readm + add rapport" && git push
+git status && git add . && git commit -m "mag" && git push
