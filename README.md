@@ -35,10 +35,8 @@ Le système doit fonctionner dans les deux sens :
 - [12. Lancer le projet](#12-lancer-le-projet)
 - [13. Importer le flow Node-RED](#13-importer-le-flow-node-red)
 - [14. Corrections et points à vérifier](#14-corrections-et-points-à-vérifier)
-- [15. Sécurité avant publication sur GitHub](#15-sécurité-avant-publication-sur-github)
-- [16. Publier le projet sur GitHub](#16-publier-le-projet-sur-github)
-- [17. Conclusion](#17-conclusion)
-- [18. Références](#18-références)
+- [15. Conclusion](#15-conclusion)
+- [16. Références](#16-références)
 
 ---
 
@@ -615,7 +613,7 @@ Le flow exporté se trouve dans :
 Node_red_architecture/flow_cpt_hum_temp_dashboard.json
 ```
 
-## 7.1 Partie POST actuellement présente dans le flow
+## 7.1 Partie POST du flow Node-RED
 
 Le fichier JSON fourni contient un nœud **HTTP In** configuré pour recevoir une requête :
 
@@ -664,7 +662,7 @@ Les trois valeurs sont ensuite envoyées vers des graphiques du dashboard.
 
 Un nœud **HTTP Response** est indispensable pour terminer la requête et renvoyer une réponse à l'ESP32. Sans celui-ci, le client HTTP peut rester en attente jusqu'au timeout.
 
-## 7.2 Partie GET `/button` attendue pour la commande de LED
+## 7.2 Partie GET `/button` pour la commande de LED
 
 Le programme ESP32 de `Esp32_to_Node_red_et_DHT11` contient également :
 
@@ -709,18 +707,14 @@ Une architecture Node-RED possible pour cette partie est :
 
 Ainsi, l'utilisateur modifie l'état depuis le dashboard puis l'ESP32 récupère cet état lors de son prochain GET.
 
-## 7.3 Limite de l'export JSON actuellement présent
+## 7.3 Flow Node-RED final
 
-Le fichier `flow_cpt_hum_temp_dashboard.json` présent dans cette archive contient bien :
+Le flow final regroupe les deux démonstrations demandées dans le TP :
 
-- la route **POST `/donnes`** ;
-- la séparation température / humidité / compteur ;
-- les graphiques du dashboard ;
-- le nœud de réponse HTTP.
+- un flux **HTTP REST** avec réception des mesures par `POST /donnes` et récupération de l’état de la LED par `GET /button` ;
+- un flux **MQTT** utilisant Mosquitto avec les topics `esp32/temperature`, `esp32/humidity` et `esp32/output`.
 
-En revanche, **l'export fourni ne contient pas actuellement les nœuds du GET `/button`**, ni les nœuds MQTT.
-
-Le programme ESP32 contient bien le code GET, mais pour que le dépôt représente exactement la démonstration complète, il faudra réexporter le flow Node-RED final depuis l'environnement où la partie bouton/GET a été réalisée.
+Le dashboard permet ainsi de visualiser les mesures reçues et de commander la LED avec les deux méthodes de communication.
 
 ---
 
@@ -1183,6 +1177,35 @@ pio run -t upload
 pio device monitor
 ```
 
+## Outils de lancement fournis
+
+Pour simplifier l'utilisation du projet sous Windows, deux lanceurs sont présents à la racine du TP.
+
+### `git_push.bat`
+
+Ce script permet de réaliser rapidement les principales opérations Git nécessaires pour enregistrer les modifications et les envoyer vers le dépôt GitHub. Il exécute successivement :
+
+```text
+git status
+git add .
+git commit -m "Maj"
+git push
+```
+
+Il permet donc de mettre à jour le dépôt sans avoir à retaper manuellement chaque commande dans un terminal.
+
+### Lanceur Node-RED
+
+Un second lanceur Windows est fourni pour démarrer plus facilement l'environnement **Node-RED** depuis un menu. Il permet d'accéder rapidement aux commandes nécessaires au lancement de Node-RED sans avoir à les saisir manuellement à chaque utilisation.
+
+Dans le dossier du TP, ce lanceur est accessible via le raccourci :
+
+```text
+NodeRED_Manager.bat - Raccourci.lnk
+```
+
+Ces deux outils ne sont pas nécessaires au fonctionnement du programme ESP32 lui-même, mais ils facilitent l'utilisation quotidienne du projet : l'un pour la gestion du dépôt GitHub et l'autre pour le lancement de Node-RED.
+
 ---
 
 # 13. Importer le flow Node-RED
@@ -1215,7 +1238,7 @@ puis redémarrer Node-RED.
 
 # 14. Corrections et points à vérifier
 
-En relisant le projet complet avant publication, j'ai identifié plusieurs points à vérifier.
+En relisant le projet complet, j'ai identifié le point suivant à vérifier dans la version REST.
 
 ## 1. Température et humidité inversées dans la version REST
 
@@ -1237,229 +1260,9 @@ float humidite = dht.readHumidity();
 
 Sinon, le graphique nommé température affiche en réalité l'humidité, et inversement.
 
-## 2. Flow Node-RED incomplet dans l'export actuel
-
-Le fichier JSON fourni contient :
-
-- le POST de réception ;
-- les fonctions d'extraction ;
-- les graphiques température, humidité et compteur.
-
-En revanche, l'export ne contient pas actuellement :
-
-- la route GET utilisée pour la LED REST ;
-- le bouton associé ;
-- les nœuds MQTT ;
-- le dashboard MQTT.
-
-Il faut donc exporter le flow final depuis la machine de TP pour que le dépôt représente la démonstration complète demandée par le sujet.
-
-## 3. Fichiers inutiles
-
-Le dépôt contient plusieurs fichiers `desktop.ini` ainsi qu'un raccourci Windows `.lnk`.
-
-Ils ne sont pas utiles au projet et peuvent être ignorés avec Git.
-
-Le fichier `.gitignore` racine contient déjà :
-
-```gitignore
-desktop.ini
-```
-
-On peut l'améliorer avec :
-
-```gitignore
-# Windows
-desktop.ini
-Thumbs.db
-*.lnk
-
-# PlatformIO
-.pio/
-
-# VS Code / PlatformIO généré
-.vscode/.browse.c_cpp.db*
-.vscode/c_cpp_properties.json
-.vscode/launch.json
-.vscode/ipch
-
-# Secrets locaux
-**/src/secrets.h
-```
-
-## 4. Dossier `.pio`
-
-Un dossier `.pio` est présent dans une copie locale du projet MQTT. Il contient des fichiers générés et des dépendances téléchargées par PlatformIO.
-
-Il n'est pas nécessaire de le publier : `platformio.ini` suffit à recréer l'environnement.
-
-## 5. Archive ZIP en double
-
-Le dépôt contient également :
-
-```text
-Esp32_to_Node_red_et_DHT11.zip
-```
-
-Comme le dossier décompressé existe déjà, cette archive est optionnelle et peut être retirée pour alléger le dépôt.
-
 ---
 
-# 15. Sécurité avant publication sur GitHub
-
-## Ne pas publier les mots de passe Wi-Fi
-
-Dans les fichiers d'origine, les identifiants Wi-Fi sont écrits directement dans `main.cpp`.
-
-Il ne faut pas publier ces valeurs dans un dépôt public.
-
-Une solution simple consiste à créer :
-
-```text
-src/secrets.h
-```
-
-avec :
-
-```cpp
-#pragma once
-
-#define WIFI_SSID "MON_WIFI"
-#define WIFI_PASSWORD "MON_MOT_DE_PASSE"
-#define SERVER_IP "192.168.x.x"
-```
-
-Puis dans `main.cpp` :
-
-```cpp
-#include "secrets.h"
-
-const char *ssid = WIFI_SSID;
-const char *password = WIFI_PASSWORD;
-```
-
-Ajouter ensuite dans `.gitignore` :
-
-```gitignore
-**/src/secrets.h
-```
-
-Pour montrer la structure aux autres personnes sans publier les vraies valeurs, on peut créer un fichier :
-
-```text
-src/secrets.example.h
-```
-
-contenant uniquement des valeurs fictives :
-
-```cpp
-#pragma once
-
-#define WIFI_SSID "VOTRE_SSID"
-#define WIFI_PASSWORD "VOTRE_MOT_DE_PASSE"
-#define SERVER_IP "192.168.1.100"
-```
-
-### Important
-
-Si un mot de passe ou une clé a déjà été envoyé dans l'historique d'un dépôt public, le supprimer uniquement du dernier fichier ne suffit pas. Il faut considérer le secret comme compromis, le remplacer et éventuellement nettoyer l'historique Git.
-
----
-
-# 16. Publier le projet sur GitHub
-
-## Étape 1 - Nettoyer le dossier
-
-Avant le premier commit :
-
-- retirer les identifiants Wi-Fi ;
-- vérifier `.gitignore` ;
-- ne pas versionner `.pio` ;
-- supprimer les fichiers Windows inutiles si nécessaire ;
-- ajouter ce `README.md` à la racine.
-
-## Étape 2 - Créer le dépôt Git local
-
-Depuis PowerShell, se placer à la racine du TP :
-
-```powershell
-cd "C:\CHEMIN\VERS\TP1"
-```
-
-Puis :
-
-```powershell
-git init -b main
-git add .
-git status
-git commit -m "Initial commit - TP IoT ESP32 REST MQTT"
-```
-
-La commande :
-
-```powershell
-git status
-```
-
-est particulièrement importante avant le commit. Elle permet de vérifier qu'aucun fichier sensible ou inutile n'est sur le point d'être envoyé.
-
-## Étape 3 - Créer le dépôt sur GitHub
-
-Sur GitHub :
-
-1. cliquer sur **New repository** ;
-2. choisir par exemple le nom :
-
-```text
-TP-IoT-ESP32-REST-MQTT
-```
-
-3. choisir `Public` ou `Private` ;
-4. ne pas ajouter un autre README si le dossier local en contient déjà un ;
-5. créer le dépôt.
-
-## Étape 4 - Relier le dépôt local à GitHub
-
-GitHub fournit une URL ressemblant à :
-
-```text
-https://github.com/VOTRE-UTILISATEUR/TP-IoT-ESP32-REST-MQTT.git
-```
-
-Ajouter le remote :
-
-```powershell
-git remote add origin https://github.com/VOTRE-UTILISATEUR/TP-IoT-ESP32-REST-MQTT.git
-```
-
-Vérifier :
-
-```powershell
-git remote -v
-```
-
-Puis publier :
-
-```powershell
-git push -u origin main
-```
-
-## Pour les modifications suivantes
-
-Le cycle normal devient :
-
-```powershell
-git status
-git add .
-git commit -m "Description de la modification"
-git push
-```
-
-Le fichier `git_push.bat` présent dans ce projet automatise une partie de cette séquence, mais il est préférable de vérifier `git status` et de choisir un message de commit adapté à chaque modification.
-
----
-
-# 17. Conclusion
+# 15. Conclusion
 
 Ce TP m'a permis de mettre en œuvre une chaîne IoT complète allant d'un capteur physique jusqu'à une interface web.
 
@@ -1480,7 +1283,7 @@ Pour un système IoT simple, REST est facile à mettre en œuvre et à déboguer
 
 ---
 
-# 18. Références
+# 16. Références
 
 - Sujet du TP : `TP1_architecture_REST-MQTT_2026.pdf`
 - Documentation DHT11 fournie : `DHT-11_datasheet.pdf`
