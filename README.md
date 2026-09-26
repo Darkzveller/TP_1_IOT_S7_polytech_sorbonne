@@ -2,6 +2,13 @@
 
 Ce dépôt regroupe mon travail réalisé dans le cadre du **TP1 d'IoT** consacré à la communication bidirectionnelle entre un **ESP32**, un **capteur DHT11** et une interface **Node-RED**.
 
+> **Remarque concernant mon environnement de travail**  
+> Dans le cadre de ce TP, j'ai choisi de travailler sur **mon ordinateur personnel**, car je suis plus à l'aise sur cet environnement et j'en maîtrise entièrement la configuration. Cela m'a permis de travailler plus efficacement, de mieux comprendre les éventuels problèmes de compilation ou de dépendances et de garder la maîtrise de l'ensemble de ma chaîne de développement.
+>
+> J'ai utilisé **Visual Studio Code** avec l'extension **PlatformIO**. PlatformIO permet de développer et de téléverser des programmes sur des cartes comme l'ESP32 avec le **framework Arduino**. Le principe reste donc très proche de l'**Arduino IDE** : on écrit le programme, on le compile puis on le téléverse sur la carte. La différence principale est que PlatformIO s'intègre à VS Code et apporte une gestion de projet plus structurée, notamment pour les bibliothèques, les dépendances, les différentes cartes et les paramètres de compilation.
+>
+> Je préfère également cette méthode car elle me laisse davantage de contrôle sur le projet. En particulier, il est possible d'ajouter des bibliothèques locales dans le dossier `lib/`, d'utiliser une version précise d'une dépendance ou, si nécessaire, de travailler sur une version modifiée d'une bibliothèque pour l'adapter au besoin du projet.
+
 L'objectif était de mettre en œuvre et de comparer deux méthodes de communication couramment utilisées en IoT :
 
 - **HTTP REST** ;
@@ -19,7 +26,7 @@ Le système doit fonctionner dans les deux sens :
 - [3. Organisation du dépôt](#3-organisation-du-dépôt)
 - [4. Démarche suivie](#4-démarche-suivie)
 - [5. Lecture du DHT11](#5-lecture-du-dht11)
-- [6. Communication HTTP REST](#6-communication-http-rest)
+- [6. Communication HTTP REST : POST et GET](#6-communication-http-rest--post-et-get)
 - [7. Node-RED avec REST](#7-node-red-avec-rest)
 - [8. Communication MQTT](#8-communication-mqtt)
 - [9. Mosquitto et tests MQTT](#9-mosquitto-et-tests-mqtt)
@@ -92,26 +99,55 @@ Node-RED peut alors publier et souscrire aux mêmes topics via le broker.
 
 # 3. Organisation du dépôt
 
-Le travail a été construit progressivement. J'ai conservé plusieurs projets PlatformIO afin de montrer les différentes étapes.
+J'ai volontairement réalisé le TP dans **plusieurs dossiers/projets PlatformIO indépendants** au lieu de développer directement une seule version finale. Cette organisation correspond aux différentes étapes de mon travail : chaque dossier valide une fonction précise avant de passer à l'étape suivante.
+
+Cela permet notamment :
+
+- d'isoler plus facilement un problème ;
+- de vérifier qu'une fonction marche avant d'en ajouter une autre ;
+- de conserver les différentes étapes du TP ;
+- de comparer facilement les versions REST et MQTT ;
+- d'éviter qu'une modification dans une partie du projet casse une étape déjà validée.
+
+## Arborescence générale
 
 ```text
 TP1/
 |
+|-- README.md
+|-- CR_IOT_Youssef_EL_KATTOUFI.docx
+|
 |-- Esp32_DHt_11/
 |   |-- platformio.ini
-|   `-- src/main.cpp
+|   |-- src/
+|   |   `-- main.cpp
+|   |-- include/
+|   |-- lib/
+|   `-- test/
 |
 |-- Esp32_to_Node_red/
 |   |-- platformio.ini
-|   `-- src/main.cpp
+|   |-- src/
+|   |   `-- main.cpp
+|   |-- include/
+|   |-- lib/
+|   `-- test/
 |
 |-- Esp32_to_Node_red_et_DHT11/
 |   |-- platformio.ini
-|   `-- src/main.cpp
+|   |-- src/
+|   |   `-- main.cpp
+|   |-- include/
+|   |-- lib/
+|   `-- test/
 |
 |-- Esp32_to_Mosquitto_et_DHT11/
 |   |-- platformio.ini
-|   `-- src/main.cpp
+|   |-- src/
+|   |   `-- main.cpp
+|   |-- include/
+|   |-- lib/
+|   `-- test/
 |
 |-- Node_red_architecture/
 |   `-- flow_cpt_hum_temp_dashboard.json
@@ -119,21 +155,54 @@ TP1/
 |-- DHT-11_datasheet.pdf
 |-- TP1_architecture_REST-MQTT_2026.pdf
 |-- Tutorial_Getting_Started_ESP32.pdf
+|-- Node_red.url
+|-- NodeRED_Manager.bat - Raccourci.lnk
 |-- git_push.bat
 `-- .gitignore
 ```
 
-### Rôle de chaque projet
+## Rôle des dossiers principaux
 
-| Dossier                         | Rôle                                                                                                                            |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `Esp32_DHt_11`                | Première étape : lecture locale du capteur DHT11 et affichage dans le moniteur série.                                         |
-| `Esp32_to_Node_red`           | Test de communication HTTP entre l'ESP32 et Node-RED avec un compteur.                                                           |
-| `Esp32_to_Node_red_et_DHT11`  | Version REST : envoi du compteur, de la température et de l'humidité par POST, puis récupération d'une commande LED par GET. |
-| `Esp32_to_Mosquitto_et_DHT11` | Version MQTT : publication des mesures et abonnement au topic de commande de la LED.                                             |
-| `Node_red_architecture`       | Export JSON du flow Node-RED présent dans le dépôt.                                                                           |
+| Dossier | Contenu et rôle |
+| --- | --- |
+| `Esp32_DHt_11` | Première étape du TP. Ce projet permet de vérifier le câblage du **DHT11**, son initialisation et la lecture locale de la température et de l'humidité dans le moniteur série. |
+| `Esp32_to_Node_red` | Deuxième étape. Ce projet teste uniquement la communication **ESP32 -> Node-RED en HTTP POST** avec une donnée simple : un compteur. Le but est de valider le Wi-Fi, l'adresse IP du PC, le port `1880`, la route HTTP et le fonctionnement de `HTTPClient` avant d'ajouter le capteur. |
+| `Esp32_to_Node_red_et_DHT11` | Version REST complète. L'ESP32 lit le DHT11 puis envoie **compteur + température + humidité** à Node-RED avec un **POST `/donnes`**. Dans l'autre sens, l'ESP32 effectue un **GET `/button`** afin de récupérer l'état demandé pour la LED. |
+| `Esp32_to_Mosquitto_et_DHT11` | Version MQTT. L'ESP32 publie la température et l'humidité vers le broker **Mosquitto** et s'abonne à un topic de commande pour recevoir l'état de la LED. |
+| `Node_red_architecture` | Contient l'export JSON du flow Node-RED utilisé pour la partie dashboard/REST. Le fichier peut être importé directement dans Node-RED. |
 
-Cette organisation permet de voir l'évolution du projet au lieu d'avoir directement un programme final difficile à déboguer.
+## Structure d'un projet PlatformIO
+
+Les quatre dossiers ESP32 possèdent globalement la même structure :
+
+```text
+Nom_du_projet/
+|-- platformio.ini
+|-- src/
+|   `-- main.cpp
+|-- include/
+|-- lib/
+`-- test/
+```
+
+- `platformio.ini` : fichier de configuration du projet. Il indique notamment la carte utilisée (`esp32doit-devkit-v1`), le framework (`arduino`), la vitesse du moniteur série et les bibliothèques nécessaires ;
+- `src/main.cpp` : fichier contenant le programme principal exécuté par l'ESP32 ;
+- `include/` : dossier prévu pour les fichiers d'en-tête personnels (`.h`) ;
+- `lib/` : dossier permettant d'ajouter des bibliothèques locales ou personnalisées. C'est notamment utile si je souhaite adapter moi-même une bibliothèque ;
+- `test/` : dossier réservé aux tests unitaires PlatformIO ;
+- `.pio/` lorsqu'il existe : dossier généré automatiquement par PlatformIO pour les fichiers de compilation et certaines dépendances. Il n'est pas nécessaire de le modifier manuellement.
+
+## Autres fichiers du dépôt
+
+- `CR_IOT_Youssef_EL_KATTOUFI.docx` : compte rendu associé au TP ;
+- `DHT-11_datasheet.pdf` : documentation du capteur DHT11 ;
+- `TP1_architecture_REST-MQTT_2026.pdf` : document de TP / architecture REST-MQTT ;
+- `Tutorial_Getting_Started_ESP32.pdf` : documentation de prise en main de l'ESP32 ;
+- `flow_cpt_hum_temp_dashboard.json` : export du flow Node-RED ;
+- `git_push.bat` : script Windows facilitant l'envoi du projet vers Git ;
+- `.gitignore` : liste des fichiers qui ne doivent pas être versionnés.
+
+Cette organisation permet donc de suivre la progression du TP et de comprendre à quel moment chaque fonctionnalité a été ajoutée.
 
 ---
 
@@ -263,60 +332,81 @@ Elles permettent respectivement de récupérer la température et l'humidité.
 
 ---
 
-# 6. Communication HTTP REST
+# 6. Communication HTTP REST : POST et GET
 
-## Architecture générale
+## 6.1 Architecture générale
 
 ```mermaid
 flowchart LR
     DHT[DHT11] --> ESP[ESP32]
-    ESP -- HTTP POST /donnes --> NR[Node-RED]
+    ESP -- "POST /donnes<br/>compteur + température + humidité" --> NR[Node-RED]
     NR --> DASH[Dashboard]
-    DASH -- commande LED --> NR
-    ESP -- HTTP GET /button --> NR
-    NR -- 0 ou 1 --> ESP
-    ESP --> LED[LED GPIO 2]
+    DASH -- "Bouton LED" --> NR
+    ESP -- "GET /button" --> NR
+    NR -- "Réponse : 0 ou 1" --> ESP
+    ESP --> LED[LED interne GPIO 2]
 ```
 
-Dans cette architecture, l'ESP32 est principalement le **client HTTP** et Node-RED joue le rôle de **serveur HTTP local**.
+Dans cette partie du TP, **l'ESP32 est un client HTTP** et **Node-RED joue le rôle de serveur HTTP local**.
 
-## Connexion Wi-Fi
+Les deux méthodes n'ont pas le même rôle :
 
-Le programme configure l'ESP32 en mode station :
+- le **POST** sert à envoyer des données de l'ESP32 vers Node-RED ;
+- le **GET** sert ici à demander à Node-RED l'état que doit prendre la LED.
+
+On obtient donc une communication bidirectionnelle même si, dans les deux cas, c'est l'ESP32 qui initie la requête HTTP.
+
+## 6.2 Connexion Wi-Fi
+
+Le programme commence par connecter l'ESP32 au même réseau local que l'ordinateur qui exécute Node-RED :
 
 ```cpp
 WiFi.mode(WIFI_STA);
 WiFi.begin(ssid, password);
 ```
 
-Le mode `WIFI_STA` signifie que l'ESP32 rejoint un réseau Wi-Fi existant comme n'importe quel client.
+Le mode `WIFI_STA` signifie que l'ESP32 fonctionne comme un client du réseau Wi-Fi.
 
-Le programme attend ensuite que la connexion soit établie et affiche l'adresse IP obtenue :
+Une fois connecté, son adresse IP peut être affichée avec :
 
 ```cpp
 Serial.println(WiFi.localIP());
 ```
 
-L'ESP32 et l'ordinateur exécutant Node-RED doivent être joignables sur le même réseau local.
+Pour que les requêtes fonctionnent, l'adresse utilisée dans `serverPOST` et `serverGET` doit correspondre à **l'adresse IP du PC qui héberge Node-RED** sur le réseau local.
 
-## Envoi des données avec POST
+---
 
-Dans la version REST complète, les données sont regroupées dans une chaîne :
+## 6.3 Requête HTTP POST : ESP32 -> Node-RED
 
-```cpp
-String httpRequestData =
-    "compteur=" + String(compteur) +
-    "&hum=" + String(humidite, 1) +
-    "&temp=" + String(temperature, 1);
-```
+### Objectif
 
-Exemple de contenu envoyé :
+Le POST est utilisé pour transmettre plusieurs informations mesurées ou générées par l'ESP32 :
+
+- le compteur ;
+- l'humidité ;
+- la température.
+
+Dans mon programme, la route utilisée est :
 
 ```text
-compteur=27&hum=48.0&temp=22.6
+POST http://IP_DU_PC:1880/donnes
 ```
 
-Puis j'indique le type de contenu :
+Le port `1880` est le port utilisé par défaut par Node-RED.
+
+### Création du client HTTP
+
+```cpp
+HTTPClient httpPOST;
+httpPOST.begin(serverPOST.c_str());
+```
+
+`HTTPClient` fournit les fonctions nécessaires pour effectuer une requête HTTP depuis l'ESP32.
+
+### Type des données envoyées
+
+J'indique ensuite à Node-RED que le corps de la requête est encodé comme un formulaire :
 
 ```cpp
 httpPOST.addHeader(
@@ -325,50 +415,195 @@ httpPOST.addHeader(
 );
 ```
 
-La requête est envoyée avec :
+Le contenu envoyé est construit sous cette forme :
+
+```cpp
+String httpRequestData =
+    "compteur=" + String(compteur) +
+    "&hum=" + String(humidite, 1) +
+    "&temp=" + String(temperature, 1);
+```
+
+Exemple réel de corps HTTP :
+
+```text
+compteur=27&hum=48.0&temp=22.6
+```
+
+Le caractère `&` sépare les différents champs. Node-RED peut ensuite récupérer les valeurs avec :
+
+```javascript
+msg.payload.compteur
+msg.payload.hum
+msg.payload.temp
+```
+
+### Envoi de la requête
+
+La requête est réellement envoyée avec :
 
 ```cpp
 int httpResponseCode = httpPOST.POST(httpRequestData);
 ```
 
-Le code HTTP retourné permet de savoir si Node-RED a bien répondu. Un code `200` signifie que la requête a été correctement traitée.
+La valeur retournée correspond au **code de réponse HTTP**.
 
-Après la requête :
+Par exemple :
 
-```cpp
-httpPOST.end();
-```
+- `200` : requête correctement traitée ;
+- `404` : route inexistante ;
+- une valeur négative retournée par la bibliothèque ESP32 indique généralement un problème de connexion ou de transport.
 
-libère les ressources utilisées par le client HTTP.
-
-## Réception de la commande LED avec GET
-
-L'ESP32 interroge également une route Node-RED :
+Le programme affiche également la réponse de Node-RED :
 
 ```cpp
-int getResponseCode = httpGET.GET();
-```
-
-Puis il récupère le corps de la réponse :
-
-```cpp
-String etatLED = httpGET.getString();
+String reponse = httpPOST.getString();
+Serial.println(reponse);
 ```
 
 Enfin :
 
 ```cpp
+httpPOST.end();
+```
+
+termine la requête et libère les ressources du client HTTP.
+
+### Pourquoi avoir d'abord créé `Esp32_to_Node_red` ?
+
+Avant d'envoyer directement les données du DHT11, j'ai créé le projet :
+
+```text
+Esp32_to_Node_red/
+```
+
+Celui-ci envoie uniquement :
+
+```text
+compteur=...
+```
+
+Cette étape permet de valider séparément la communication POST. Si le compteur arrive correctement dans Node-RED, je sais que le Wi-Fi, l'adresse IP, la route et le code HTTP fonctionnent avant d'ajouter le DHT11.
+
+---
+
+## 6.4 Requête HTTP GET : Node-RED -> ESP32 par interrogation
+
+### Objectif
+
+La deuxième partie de la communication permet de commander la LED intégrée de l'ESP32.
+
+Dans mon implémentation, Node-RED conserve l'état demandé par le bouton du dashboard et l'ESP32 vient régulièrement demander cet état avec une requête GET.
+
+La route prévue est :
+
+```text
+GET http://IP_DU_PC:1880/button
+```
+
+Le principe est le suivant :
+
+```text
+Utilisateur -> bouton Node-RED -> état mémorisé dans Node-RED
+                                      ^
+                                      |
+ESP32 ---------------- GET /button --+
+ESP32 <-------------- réponse 0/1 ----
+```
+
+Il faut donc bien comprendre que **Node-RED n'ouvre pas directement une connexion vers l'ESP32** dans cette version REST. L'ESP32 interroge périodiquement Node-RED pour connaître l'état demandé.
+
+### Envoi du GET
+
+Le client est créé avec :
+
+```cpp
+HTTPClient httpGET;
+httpGET.begin(serverGET.c_str());
+```
+
+Puis la requête est envoyée :
+
+```cpp
+int getResponseCode = httpGET.GET();
+```
+
+Contrairement au POST, aucune donnée n'est placée dans le corps de la requête ici : l'ESP32 demande simplement la ressource `/button`.
+
+### Lecture de la réponse
+
+Si Node-RED répond correctement, le corps de la réponse est lu avec :
+
+```cpp
+String etatLED = httpGET.getString();
+```
+
+Dans ce TP, la convention retenue est :
+
+```text
+1 -> LED allumée
+0 -> LED éteinte
+```
+
+Le programme applique ensuite l'état reçu :
+
+```cpp
 if (etatLED == "1")
 {
     digitalWrite(LED_PIN, HIGH);
+    Serial.println("LED : ON");
 }
 else if (etatLED == "0")
 {
     digitalWrite(LED_PIN, LOW);
+    Serial.println("LED : OFF");
+}
+else
+{
+    Serial.println("Etat LED inconnu !");
 }
 ```
 
-La chaîne reçue est donc transformée en action physique sur la LED.
+Puis :
+
+```cpp
+httpGET.end();
+```
+
+ferme la requête.
+
+### Fréquence d'interrogation
+
+À la fin de la boucle principale, le programme contient :
+
+```cpp
+delay(500);
+```
+
+L'ESP32 recommence donc son cycle environ toutes les 500 ms, auquel s'ajoute le temps nécessaire aux lectures et aux communications. Il envoie ses données puis interroge Node-RED pour connaître l'état de la LED.
+
+Cette méthode correspond à une forme de **polling** : le client demande régulièrement si la valeur a changé.
+
+---
+
+## 6.5 Résumé d'un cycle REST complet
+
+À chaque passage dans `loop()`, le fonctionnement peut être résumé ainsi :
+
+1. lecture de la température et de l'humidité du DHT11 ;
+2. incrémentation du compteur ;
+3. vérification de la connexion Wi-Fi ;
+4. création d'une requête **POST `/donnes`** ;
+5. envoi du compteur, de la température et de l'humidité vers Node-RED ;
+6. lecture du code et de la réponse HTTP ;
+7. fermeture du client POST ;
+8. création d'une requête **GET `/button`** ;
+9. récupération de `0` ou `1` depuis Node-RED ;
+10. mise à jour de la LED sur le GPIO 2 ;
+11. fermeture du client GET ;
+12. attente puis répétition du cycle.
+
+Le POST assure donc la partie **ESP32 -> Node-RED**, tandis que le GET permet de réaliser la partie **Node-RED -> ESP32** dans l'architecture REST choisie pour ce TP.
 
 ---
 
@@ -380,27 +615,29 @@ Le flow exporté se trouve dans :
 Node_red_architecture/flow_cpt_hum_temp_dashboard.json
 ```
 
-## Réception des données
+## 7.1 Partie POST actuellement présente dans le flow
 
-Le flow contient un nœud **HTTP In** configuré en POST sur la route des données.
+Le fichier JSON fourni contient un nœud **HTTP In** configuré pour recevoir une requête :
 
-Lorsqu'une requête `application/x-www-form-urlencoded` est reçue, Node-RED place les champs dans :
-
-```javascript
-msg.payload
+```text
+POST /donnes
 ```
 
-On peut alors retrouver :
+Quand l'ESP32 envoie par exemple :
+
+```text
+compteur=27&hum=48.0&temp=22.6
+```
+
+Node-RED transforme les champs reçus et permet d'accéder à :
 
 ```javascript
-msg.payload.temp
-msg.payload.hum
 msg.payload.compteur
+msg.payload.hum
+msg.payload.temp
 ```
 
-## Extraction des valeurs
-
-Trois nœuds `function` sont utilisés pour isoler les données avant de les transmettre aux graphiques.
+Trois nœuds `function` séparent ensuite les valeurs.
 
 ### Température
 
@@ -423,29 +660,67 @@ msg.payload = msg.payload.compteur;
 return msg;
 ```
 
-Le principe est important : dans Node-RED, le message circule de nœud en nœud dans l'objet `msg`. La propriété `msg.payload` est couramment utilisée pour transporter la donnée principale.
+Les trois valeurs sont ensuite envoyées vers des graphiques du dashboard.
 
-## Réponse HTTP
+Un nœud **HTTP Response** est indispensable pour terminer la requête et renvoyer une réponse à l'ESP32. Sans celui-ci, le client HTTP peut rester en attente jusqu'au timeout.
 
-Le flow contient aussi un nœud **HTTP Response** configuré en `200` afin de terminer correctement la requête reçue depuis l'ESP32.
+## 7.2 Partie GET `/button` attendue pour la commande de LED
 
-Sans nœud `HTTP Response`, le client ESP32 pourrait attendre une réponse ou finir par rencontrer un timeout.
+Le programme ESP32 de `Esp32_to_Node_red_et_DHT11` contient également :
 
-## Dashboard
+```cpp
+String serverGET = "http://IP_DU_PC:1880/button";
+```
 
-Le flow contient trois graphiques :
+La logique Node-RED correspondante doit fournir une route :
 
-- température ;
-- humidité ;
-- compteur.
+```text
+GET /button
+```
 
-Ils permettent de visualiser l'évolution des données reçues en temps réel.
+qui renvoie l'état du bouton sous la forme :
 
-### Important concernant le flow fourni
+```text
+1
+```
 
-L'export JSON actuellement présent dans le dépôt contient bien la partie **POST + graphiques**, mais il ne contient pas le flow complet du **GET `/button`** ni la partie **MQTT**.
+ou :
 
-Avant de considérer le dépôt comme le livrable final du TP, il faut donc réexporter depuis Node-RED le flow complet utilisé pendant la démonstration si ces nœuds existent dans ton environnement local.
+```text
+0
+```
+
+Une architecture Node-RED possible pour cette partie est :
+
+```text
+[Dashboard Button/Switch]
+          |
+          v
+[mémorisation de l'état]
+
+[HTTP In : GET /button]
+          |
+          v
+[récupération de l'état mémorisé]
+          |
+          v
+[HTTP Response : "0" ou "1"]
+```
+
+Ainsi, l'utilisateur modifie l'état depuis le dashboard puis l'ESP32 récupère cet état lors de son prochain GET.
+
+## 7.3 Limite de l'export JSON actuellement présent
+
+Le fichier `flow_cpt_hum_temp_dashboard.json` présent dans cette archive contient bien :
+
+- la route **POST `/donnes`** ;
+- la séparation température / humidité / compteur ;
+- les graphiques du dashboard ;
+- le nœud de réponse HTTP.
+
+En revanche, **l'export fourni ne contient pas actuellement les nœuds du GET `/button`**, ni les nœuds MQTT.
+
+Le programme ESP32 contient bien le code GET, mais pour que le dépôt représente exactement la démonstration complète, il faudra réexporter le flow Node-RED final depuis l'environnement où la partie bouton/GET a été réalisée.
 
 ---
 

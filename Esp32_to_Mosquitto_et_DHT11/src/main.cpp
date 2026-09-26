@@ -32,8 +32,8 @@ const char *name_card_elec = "esp32_test_node_red_v2"; // Nom d'hôte de la cart
 // BESOIN DE ME SIMPLIFIER MA VIE
 #ifdef MON_TELEPHONE
 const char *ssid = "Me voici";      // SSID du réseau WiFi
-const char *password = "youssef13"; // Mot de passe du réseau WiFi
-const char *mqtt_server = "192.168.233.171";
+const char *password = "nhtre951"; // Mot de passe du réseau WiFi
+const char *mqtt_server = "192.168.109.171";
 
 #endif
 
